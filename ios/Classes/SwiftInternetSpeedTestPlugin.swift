@@ -158,8 +158,8 @@ public class SwiftInternetSpeedTestPlugin: NSObject, FlutterPlugin {
                 result("iOS " + UIDevice.current.systemVersion)
             } else if (call.method == "startListening") {
                 mapToCall(result: result, arguments: call.arguments)
-            } else if (call.method == "cancelListening") {
-//                cancelListening(arguments: call.arguments, result: result)
+            } else if (call.method == "cancel") {
+                speedTest.stopTest()
             }
     }
     

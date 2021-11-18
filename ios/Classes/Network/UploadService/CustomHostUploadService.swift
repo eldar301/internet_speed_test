@@ -13,6 +13,7 @@ class CustomHostUploadService: NSObject, SpeedService {
     private var latestDate: Date?
     private var current: ((Speed, Speed) -> ())!
     private var final: ((Result<Speed, NetworkError>) -> ())!
+    private var task: URLSessionUploadTask?
     
     func test(_ url: URL, fileSize: Int, timeout: TimeInterval, current: @escaping (Speed, Speed) -> (), final: @escaping (Result<Speed, NetworkError>) -> ()) {
         self.current = current
@@ -24,9 +25,13 @@ class CustomHostUploadService: NSObject, SpeedService {
                                        "Content-Length": "\(fileSize)",
                                        "Connection": "keep-alive"]
         
-        URLSession(configuration: sessionConfiguration(timeout: timeout / 1000), delegate: self, delegateQueue: OperationQueue.main)
+        task = URLSession(configuration: sessionConfiguration(timeout: 15), delegate: self, delegateQueue: OperationQueue.main)
             .uploadTask(with: request, from: Data(count: fileSize))
-            .resume()
+        task?.resume()
+    }
+    
+    func stop() {
+        task?.cancel()
     }
 }
 
@@ -59,14 +64,16 @@ extension CustomHostUploadService: URLSessionTaskDelegate {
     
     func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
         if error != nil {
-            self.final(.error(NetworkError.requestFailed))
+            let result = calculate(bytes: task!.countOfBytesReceived, seconds: Date().timeIntervalSince(self.responseDate ?? Date()))
+            self.final(.value(result))
             responseDate = nil
         }
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if error != nil {
-            self.final(.error(NetworkError.requestFailed))
+            let result = calculate(bytes: self.task!.countOfBytesReceived, seconds: Date().timeIntervalSince(self.responseDate ?? Date()))
+            self.final(.value(result))
             responseDate = nil
         }
     }

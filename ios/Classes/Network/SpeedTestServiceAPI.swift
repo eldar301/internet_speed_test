@@ -25,11 +25,12 @@ public protocol HostPingService {
 
 protocol SpeedService {
     func test(_ url: URL, fileSize: Int, timeout: TimeInterval, current: @escaping (Speed, Speed) -> (), final: @escaping (Result<Speed, NetworkError>) -> ())
+    func stop()
 }
 
 extension SpeedService {
-    func calculate(bytes: Int64, seconds: TimeInterval) -> Speed {
-        return Speed(bytes: bytes, seconds: seconds).pretty
+    func calculate(bytes: Int64, seconds: TimeInterval?) -> Speed {
+        return Speed(bytes: bytes, seconds: seconds ?? 1).pretty
     }
     
     func sessionConfiguration(timeout: TimeInterval) -> URLSessionConfiguration {

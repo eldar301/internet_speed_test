@@ -13,14 +13,19 @@ class CustomHostDownloadService: NSObject, SpeedService {
     private var latestDate: Date?
     private var current: ((Speed, Speed) -> ())!
     private var final: ((Result<Speed, NetworkError>) -> ())!
+    private var task: URLSessionDownloadTask?
     
     func test(_ url: URL, fileSize: Int, timeout: TimeInterval, current: @escaping (Speed, Speed) -> (), final: @escaping (Result<Speed, NetworkError>) -> ()) {
         self.current = current
         self.final = final
         let resultURL = HostURLFormatter(speedTestURL: url).downloadURL(size: fileSize)
-        URLSession(configuration: sessionConfiguration(timeout: timeout), delegate: self, delegateQueue: OperationQueue.main)
+        task = URLSession(configuration: sessionConfiguration(timeout: 15), delegate: self, delegateQueue: OperationQueue.main)
             .downloadTask(with: resultURL)
-            .resume()
+        task?.resume()
+    }
+    
+    func stop() {
+        task?.cancel()
     }
 }
 
@@ -34,7 +39,8 @@ extension CustomHostDownloadService: URLSessionDownloadDelegate {
     func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
         if error != nil {
             print("url session1")
-            self.final(.error(NetworkError.requestFailed))
+            let result = calculate(bytes: task!.countOfBytesReceived, seconds: Date().timeIntervalSince(self.responseDate ?? Date()))
+            self.final(.value(result))
             responseDate = nil
         }
     }
@@ -46,7 +52,8 @@ extension CustomHostDownloadService: URLSessionDownloadDelegate {
             
             print("error is \(error.debugDescription)")
             print("url session2")
-            self.final(.error(NetworkError.requestFailed))
+            let result = calculate(bytes: self.task!.countOfBytesReceived, seconds: Date().timeIntervalSince(self.responseDate ?? Date()))
+            self.final(.value(result))
             responseDate = nil
         }
     }

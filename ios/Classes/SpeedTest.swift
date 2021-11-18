@@ -74,6 +74,11 @@ public final class SpeedTest {
         }
     }
     
+    public func stopTest() {
+        downloadService.stop()
+        uploadService.stop()
+    }
+    
     public func runDownloadTest(for host: URL, size: Int, timeout: TimeInterval, current: @escaping (Speed) -> (), final: @escaping (Result<Speed, NetworkError>) -> ()) {
         downloadService.test(host,
                              fileSize: size,
